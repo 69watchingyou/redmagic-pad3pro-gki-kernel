@@ -97,6 +97,9 @@ fi
 python3 - "$STOCK_CONFIG" "$OUT_DIR/.config" <<'PY'
 import pathlib, sys
 stock, result = [set(pathlib.Path(p).read_text().splitlines()) for p in sys.argv[1:]]
+for required in ('CONFIG_KSU=y', 'CONFIG_KSU_SUSFS=y', 'CONFIG_KPM=y', 'CONFIG_KALLSYMS=y', 'CONFIG_KALLSYMS_ALL=y', 'CONFIG_IKCONFIG=y'):
+    if required not in result:
+        raise SystemExit('Required integrated configuration missing: ' + required)
 keys = ('CONFIG_ARM64_4K_PAGES', 'CONFIG_MODVERSIONS', 'CONFIG_MODULE_SIG', 'CONFIG_MODULE_SIG_PROTECT', 'CONFIG_CFI_CLANG', 'CONFIG_LTO_NONE', 'CONFIG_ANDROID_KABI_RESERVE', 'CONFIG_TRIM_UNUSED_KSYMS')
 for key in keys:
     required = key + '=y'
@@ -108,6 +111,9 @@ cp "$OUT_DIR/.config" "$OUT_DIR/evidence/resolved.config"
 make "${make_args[@]}" -s kernelrelease > "$OUT_DIR/evidence/kernelrelease.txt"
 # SukiSU checks usr/include at parse time: install UAPI before parsing Image build.
 make "${make_args[@]}" INSTALL_HDR_PATH="$OUT_DIR/usr" headers_install
+# Compile adapted integration surfaces first so API errors fail before a full build.
+# These are real Kbuild targets with identical flags, not a substitute for the full link.
+make "${make_args[@]}" -j"${JOBS:-$(nproc)}" fs/proc/task_mmu.o fs/susfs.o drivers/kernelsu/
 make "${make_args[@]}" -j"${JOBS:-$(nproc)}" Image modules
 [[ -s $OUT_DIR/arch/arm64/boot/Image && -s $OUT_DIR/Module.symvers && -s $OUT_DIR/vmlinux ]] || fail 'required build outputs missing'
 sha256sum "$OUT_DIR/arch/arm64/boot/Image" "$OUT_DIR/vmlinux" "$OUT_DIR/Module.symvers" > "$OUT_DIR/evidence/SHA256SUMS"

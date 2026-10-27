@@ -1323,7 +1323,7 @@ index 6276b3938..019a760dc 100644
  	show_fd_locks(m, file, files);
  	if (seq_has_overflowed(m))
 diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index a7d8724fb..17a92a7ae 100644
+index a7d8724fb..329fac922 100644
 --- a/fs/proc/task_mmu.c
 +++ b/fs/proc/task_mmu.c
 @@ -23,6 +23,9 @@
@@ -1351,8 +1351,14 @@ index a7d8724fb..17a92a7ae 100644
  static void
  show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
  {
-@@ -275,9 +286,37 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
+@@ -273,20 +284,47 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
+ 	dev_t dev = 0;
+ 	const char *name = NULL;
  
++	/* Skip page size fixup VMAs, including the redirected-file path. */
++	if (flags & __VM_NO_COMPAT)
++		return;
++
  	if (file) {
  		struct inode *inode = file_inode(vma->vm_file);
 +#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
@@ -1363,8 +1369,7 @@ index a7d8724fb..17a92a7ae 100644
 +			if (!ret) {
 +				pgoff = ((loff_t)vma->vm_pgoff) << PAGE_SHIFT;
 +				start = vma->vm_start;
-+				end = VMA_PAD_START(vma);
-+				__fold_filemap_fixup_entry(&((struct proc_maps_private *)m->private)->iter, &end);
++				end = vma->vm_end;
 +				show_vma_header_prefix(m, start, end, flags, pgoff, dev, ino);
 +				seq_pad(m, ' ');
 +				if (spoofed_redirected_name)
@@ -1389,7 +1394,16 @@ index a7d8724fb..17a92a7ae 100644
  	}
  
  	start = vma->vm_start;
-@@ -874,6 +913,11 @@ static int show_smap(struct seq_file *m, void *v)
+ 	end = vma->vm_end;
+ 
+-	/* Skip page size fixup VMAs */
+-	if (flags & __VM_NO_COMPAT)
+-		return;
+-
+ 	show_vma_header_prefix(m, start, end, flags, pgoff, dev, ino);
+ 	if (mm)
+ 		anon_name = anon_vma_name(vma);
+@@ -874,6 +912,11 @@ static int show_smap(struct seq_file *m, void *v)
  	struct vm_area_struct *vma = get_data_vma(v);
  	struct mem_size_stats mss;
  
@@ -1401,7 +1415,7 @@ index a7d8724fb..17a92a7ae 100644
  	memset(&mss, 0, sizeof(mss));
  
  	if (!vma_pages(vma))
-@@ -937,7 +981,14 @@ static int show_smaps_rollup(struct seq_file *m, void *v)
+@@ -937,7 +980,14 @@ static int show_smaps_rollup(struct seq_file *m, void *v)
  
  	vma_start = vma->vm_start;
  	do {
@@ -1416,7 +1430,7 @@ index a7d8724fb..17a92a7ae 100644
  		last_vma_end = vma->vm_end;
  
  		/*
-@@ -999,8 +1050,12 @@ static int show_smaps_rollup(struct seq_file *m, void *v)
+@@ -999,8 +1049,12 @@ static int show_smaps_rollup(struct seq_file *m, void *v)
  				continue;
  
  			/* Case 4 above */
@@ -1431,7 +1445,7 @@ index a7d8724fb..17a92a7ae 100644
  		}
  	} for_each_vma(vmi, vma);
  
-@@ -1737,6 +1792,9 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+@@ -1737,6 +1791,9 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
  	while (count && (start_vaddr < end_vaddr)) {
  		int len;
  		unsigned long end;
@@ -1441,7 +1455,7 @@ index a7d8724fb..17a92a7ae 100644
  
  		pm.pos = 0;
  		end = (start_vaddr + PAGEMAP_WALK_SIZE) & PAGEMAP_WALK_MASK;
-@@ -1746,7 +1804,15 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+@@ -1746,7 +1803,15 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
  		ret = mmap_read_lock_killable(mm);
  		if (ret)
  			goto out_free;

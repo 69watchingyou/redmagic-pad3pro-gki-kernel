@@ -19,6 +19,7 @@ Original upstream patch dry-run failed against this older common in fs/exec.c, f
 
 - Restored SUSFS includes/declarations at existing older include anchors rather than importing unrelated new-kernel headers.
 - `show_smap()` uses this tree's `get_data_vma(v)`/`get_pad_vma(v)` layout. Added the hidden-map check before statistics; preserved existing padded-VMA flow.
+- Follow-up after external Actions run 40550423998 failed with `fs/proc/task_mmu.c:298: undeclared function '__fold_filemap_fixup_entry'`: the newer redirect hook incorrectly imported a folding helper absent from this baseline. This tree's `show_map()` already obtains a data-only VMA with `get_data_vma()` and renders padding separately through `show_map_pad_vma()`. `get_data_vma()` trims `vm_end` but leaves padding flag bits intact, so applying `VMA_PAD_START()` again would subtract padding twice. The redirected branch now uses `vma->vm_end`, matching the original renderer, with no folding call or replacement stub. The existing `__VM_NO_COMPAT` early-return guard was moved ahead of both ordinary and redirected paths so neither can print a fixup VMA. This follow-up passed a new independent-index patch check; it has not yet passed a compiler run.
 - smaps-rollup's Case 4 uses this older tree's single-statement branch. Wrapped the existing statistics call with the SUSFS filter without changing the original last_vma_end bookkeeping.
 - SukiSU's `ksu_su_compat_enabled` is actually `bool`, despite stale `static_key_true` declarations in the SUSFS50 patch. Replaced those declarations and checks in exec/open/stat with bool plus `READ_ONCE`.
 - `ksu_handle_sys_read` actually returns int and accepts `(unsigned int fd, char __user **buf_ptr, size_t *count_ptr)`; corrected the declaration and syscall invocation to pass all three arguments.
@@ -30,7 +31,7 @@ Required top-level integration options: `CONFIG_KSU=y`, `CONFIG_KSU_SUSFS=y`, `C
 
 ## SHA256
 
-- susfs-sukisu-6.6.30.patch: `472eab484cd98227de4c7080e24ecb3f10e4b9f3214f67bcaaa72352234f0a7c`
+- susfs-sukisu-6.6.30.patch: `0f15a502ff245497de55d01218a469ba4e5abe99ee392ffc0fe09b1bb03ff1d8`
 - pinned fs/susfs.c: `7dfe2337f458a23351db7e1b5f23ec4cacb98a35bb59052bf286fb36e7c2510e`
 - pinned include/linux/susfs.h: `31d5caa8313e66d8ab23e56cebfefc855541f2adffc0c95e1d21a289899cb154`
 - pinned include/linux/susfs_def.h: `adb2b86a0124e85ac24e3ce83332f2c70a810aef02b894f05b046b58b128ac38`
