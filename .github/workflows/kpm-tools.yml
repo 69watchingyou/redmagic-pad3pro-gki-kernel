@@ -1,0 +1,49 @@
+name: Build pinned KPM payload and host tools
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/kpm-tools.yml
+permissions:
+  contents: read
+jobs:
+  build-kpm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake zlib1g-dev xz-utils
+      - name: Fetch and verify fixed sources and compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init kp-src
+          git -C kp-src remote add origin https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch.git
+          git -C kp-src fetch --depth=1 origin d958d2582fe3b7eaaeaf238b3bf9af4507a81174
+          git -C kp-src checkout --detach FETCH_HEAD
+          test "$(git -C kp-src rev-parse HEAD)" = d958d2582fe3b7eaaeaf238b3bf9af4507a81174
+          curl --fail --location --retry 3 https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/12.2.rel1/binrel/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf.tar.xz -o arm-toolchain.tar.xz
+          echo "62d66e0ad7bd7f2a183d236ee301a5c73c737c886c7944aa4f39415aab528daf  arm-toolchain.tar.xz" | sha256sum --check --strict
+          mkdir arm-toolchain
+          tar -xJf arm-toolchain.tar.xz -C arm-toolchain --strip-components=1
+      - name: Compile payload and native tools from source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export TARGET_COMPILE="$GITHUB_WORKSPACE/arm-toolchain/bin/aarch64-none-elf-"
+          make -C kp-src/kernel -j2 kpimg
+          cmake -S kp-src/tools -B kp-src/out/host -DCMAKE_BUILD_TYPE=Release
+          cmake --build kp-src/out/host --parallel 2
+          test -s kp-src/kernel/kpimg
+          test -x kp-src/out/host/kptools
+          mkdir artifacts
+          cp kp-src/kernel/kpimg kp-src/out/host/kptools artifacts/
+          printf "KP_SOURCE=d958d2582fe3b7eaaeaf238b3bf9af4507a81174\nABI=2\nDEVICE_TESTED=false\n" > artifacts/BUILD-INFO.txt
+          (cd artifacts && sha256sum kpimg kptools > SHA256SUMS)
+      - name: Upload experimental KPM components (not a flashable kernel)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: experimental-kpm-abi2-components
+          path: artifacts/
+          retention-days: 7
