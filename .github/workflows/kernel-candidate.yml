@@ -1,0 +1,106 @@
+name: Experimental RedMagic integrated kernel candidate
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/kernel-candidate.yml'
+permissions:
+  contents: read
+concurrency:
+  group: redmagic-kernel-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      COMMON_DIR: ${{ github.workspace }}/work/common
+      CLANG_DIR: ${{ github.workspace }}/work/clang/clang-r510928
+      STOCK_CONFIG: ${{ github.workspace }}/configs/stock.config
+      CONFIG_FRAGMENT: ${{ github.workspace }}/requirements.fragment
+      OUT_DIR: ${{ github.workspace }}/work/out
+      PATCH_REVIEW_ACK: experimental-not-flashable
+      # Explicit fallback identity, not a claimed upstream release version.
+      KSU_VERSION_PIN: '13000'
+      KSU_VERSION_FULL_PIN: 0b666cad90f3-candidate
+      JOBS: '4'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Validate recipe tests and exact stock configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s . -p 'test_*.py' -v
+          echo '0fa6165a2f604b345e6a18e838367b07e4f28d22cf052b920dfdd758aa878231  configs/stock.config' | sha256sum --check --strict
+      - name: Host dependencies and free-space report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p logs
+          df -h "$GITHUB_WORKSPACE" | tee logs/disk-before.txt
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential python3 git curl bc bison flex libssl-dev libelf-dev dwarves rsync cpio zstd
+          pahole --version | tee logs/pahole.txt
+          # No swap creation or destructive runner cleanup. OOM/ENOSPC is a real failure.
+      - name: Fetch exact common and sparse pinned Clang
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/common work/clang
+          common_sha=$(python3 -c "import json;print(json.load(open('source-lock.json'))['kernel']['commit'])")
+          test "$common_sha" = 54dcbfbef792fe56756fa60d5f10395a958ac2f1
+          git -C work/common init
+          git -C work/common remote add origin https://github.com/aosp-mirror/kernel_common.git
+          git -C work/common fetch --depth=1 origin "$common_sha"
+          git -C work/common checkout --detach FETCH_HEAD
+          test "$(git -C work/common rev-parse HEAD)" = "$common_sha"
+          git -C work/clang init
+          git -C work/clang remote add origin https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86
+          git -C work/clang config remote.origin.promisor true
+          git -C work/clang config remote.origin.partialclonefilter blob:none
+          git -C work/clang sparse-checkout init --cone
+          git -C work/clang sparse-checkout set clang-r510928
+          git -C work/clang fetch --filter=blob:none --depth=1 origin 7061673283909f372f4938e45149d23bd10cbd40
+          git -C work/clang checkout --detach FETCH_HEAD
+          test "$(git -C work/clang rev-parse HEAD)" = 7061673283909f372f4938e45149d23bd10cbd40
+          git -C work/common rev-parse HEAD > logs/common-source.txt
+          git -C work/clang rev-parse HEAD > logs/clang-source.txt
+          "$CLANG_DIR/bin/clang" --version | tee logs/clang.txt
+      - name: Apply reviewed integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f patches/integrate.sh
+          test -f "$STOCK_CONFIG"
+          # Interface: COMMON_DIR environment + first positional source-tree path.
+          # integrate.sh must fail on missing patches/rejects and pin external source.
+          bash patches/integrate.sh "$COMMON_DIR" 2>&1 | tee logs/integrate.log
+      - name: Compile raw Image and modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash build_kernel_candidate.sh 2>&1 | tee logs/compile.log
+      - name: Inspect unprocessed raw candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 verify_artifact.py "$OUT_DIR/arch/arm64/boot/Image" | tee logs/image-validation.json
+          printf '%s\n' 'RAW CANDIDATE ONLY: KernelPatch postprocessing not performed.' 'No vendor ABI comparison or device boot test; not flashable certification.' > logs/STATUS.txt
+      - name: Upload diagnostics and candidate if present
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: redmagic-6.6.30-raw-candidate-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: warn
+          include-hidden-files: true
+          compression-level: 6
+          path: |
+            logs/
+            work/out/arch/arm64/boot/Image
+            work/out/Module.symvers
+            work/out/System.map
+            work/out/modules.order
+            work/out/modules.builtin
+            work/out/.config
+            work/out/evidence/

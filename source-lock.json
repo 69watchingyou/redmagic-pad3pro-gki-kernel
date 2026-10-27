@@ -1,5 +1,5 @@
 {
-  "status": "preflight-only-not-build-ready",
+  "status": "experimental-main-kernel-build-pending",
   "device": "NP05J",
   "kernel": {
     "repository": "https://android.googlesource.com/kernel/common",

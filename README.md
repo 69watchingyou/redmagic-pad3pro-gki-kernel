@@ -1,4 +1,4 @@
-# RedMagic Pad3Pro kernel preparation — NOT BUILD READY
+# RedMagic Pad3Pro experimental kernel build
 
 Target: stock android15-6.6.30, KMI 8, 4K pages, built-in SukiSU + SUSFS + KPM.
 
@@ -6,7 +6,7 @@ User-designated remote: https://github.com/69watchingyou/redmagic-pad3pro-gki-ke
 
 ## Status
 
-No kernel has been compiled or boot tested. No flashable boot image is supplied. The preflight workflow intentionally fails while required integration checks are unresolved. A separate KPM component workflow has successfully compiled its payload and host tools; it does not compile the main kernel. Do not interpret unit-test success as kernel compatibility.
+Main kernel compilation is experimental and has not yet succeeded or been boot tested. No flashable boot image is supplied. The new kernel-candidate workflow attempts a raw Image/modules build from the exact stock source and adapted SukiSU/SUSFS hooks. The preflight workflow still intentionally fails while integration validation is unresolved. A separate KPM component workflow has successfully compiled its payload and host tools. Do not interpret unit-test or patch-application success as kernel compatibility.
 
 Verified common source: `54dcbfbef792fe56756fa60d5f10395a958ac2f1`, tag `android15-6.6-2024-07_r29`, build `12368803`. A matched historical superproject snapshot now pins all 34 dependencies; this is not proof of the original CI full manifest. New KPM ABI v2 components have successfully built separately from pinned source with a checksum-verified ARM compiler. A successful component build is not a compiled kernel or a device compatibility result. No automatic flashing commands are included.
 
