@@ -21,6 +21,10 @@ python3 verify_artifact.py /path/to/raw/Image
 
 Preflight currently exits 2 by design. Artifact config checks do not establish KPM runtime operation, vendor ABI compatibility, or AVB acceptance. Stock image inspector is read-only and does not verify AVB cryptographic signatures.
 
+## Offline vendor module check
+
+`check_vendor_abi.py` accepts a separately preserved requirements JSON, one or more `--symvers` files, the complete actual candidate module `--candidate-vermagic`, and an exclusive new `--report` path. It compares imported CRCs and follows the exact MODVERSIONS first-space vermagic rule. A release suffix difference alone is not a failure when the module has CRCs. Missing symbols remain unresolved because some may be supplied by unchanged vendor modules. Even a passing limited check does not certify vendor ABI, CFI, signatures, boot or runtime behavior. Original firmware payloads are not included in this repository.
+
 ## Reference scripts
 
 The previously audited ShirkNeko/GKI_KernelSU_SUSFS scripts are deliberately not shipped here. They ignore several command failures, use moving dependencies, skip 6.6 KPM postprocessing and use generic packaging parameters. The KPM component workflow builds native tools and payload only; its artifacts are NOT boot images.
