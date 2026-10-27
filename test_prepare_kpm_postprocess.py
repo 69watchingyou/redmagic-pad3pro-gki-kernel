@@ -190,6 +190,8 @@ class ProvenanceTests(unittest.TestCase):
             provenance = json.loads((destination / "provenance.json").read_text())
             self.assertFalse(provenance["flash_authorized"])
             self.assertEqual(provenance["component_run_id"], 40548423613)
+            self.assertEqual(provenance["candidate_archive_digest"], api.artifact["digest"])
+            self.assertEqual(provenance["component_archive_digest"], api.artifact["digest"])
             self.assertEqual((destination / "Image").read_bytes(), b"image")
 
     def test_archive_digest_required_before_download(self):

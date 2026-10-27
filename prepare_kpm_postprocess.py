@@ -197,6 +197,7 @@ def prepare(api, repository, run_id, directory):
     provenance = {"repository": repository, "candidate_run_id": run_id, "candidate_head_sha": candidate["head_sha"],
                   "candidate_artifact_id": raw["id"], "component_run_id": COMPONENT_RUN,
                   "component_head_sha": component["head_sha"], "component_artifact_id": tools["id"],
+                  "candidate_archive_digest": raw["digest"], "component_archive_digest": tools["digest"],
                   "component_workflow_sha256": COMPONENT_WORKFLOW_SHA256,
                   "component_provenance": "Historical source-lock has kpm_implementation=null; exact pinned head and workflow blob authenticate KP d958d2582fe3b7eaaeaf238b3bf9af4507a81174 and compiler SHA256 62d66e0ad7bd7f2a183d236ee301a5c73c737c886c7944aa4f39415aab528daf instead.",
                   "component_sha256": HASHES, "input_sha256": hashlib.sha256(image).hexdigest(),
