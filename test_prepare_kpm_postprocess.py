@@ -149,6 +149,7 @@ class ProvenanceTests(unittest.TestCase):
             api = FakeAPI()
             api.archive = lambda artifact_id: archive([("work/out/arch/arm64/boot/Image", b"image"),
                                                         ("kpimg", b"wrong"), ("kptools", b"wrong")])
+            api.artifact["digest"] = "sha256:" + hashlib.sha256(api.archive(789)).hexdigest()
             with patch.object(target, "verified_run", return_value=api.run), \
                  patch.object(target, "verified_artifact", return_value=api.artifact), \
                  patch.object(target.Path, "read_text", return_value=json.dumps(target.PINS)):
@@ -179,6 +180,7 @@ class ProvenanceTests(unittest.TestCase):
             api = FakeAPI()
             api.archive = lambda artifact_id: archive([("work/out/arch/arm64/boot/Image", b"image"), *parts.items(),
                                                         ("../never-extracted", b"bad")])
+            api.artifact["digest"] = "sha256:" + hashlib.sha256(api.archive(789)).hexdigest()
             with patch.object(target, "verified_run", return_value=api.run), \
                  patch.object(target, "verified_artifact", return_value=api.artifact), \
                  patch.object(target, "HASHES", hashes), \
@@ -189,6 +191,19 @@ class ProvenanceTests(unittest.TestCase):
             self.assertFalse(provenance["flash_authorized"])
             self.assertEqual(provenance["component_run_id"], 40548423613)
             self.assertEqual((destination / "Image").read_bytes(), b"image")
+
+    def test_archive_digest_required_before_download(self):
+        api = FakeAPI()
+        api.archive = lambda _: self.fail("download must not happen")
+        for value in (None, "", "sha256:wrong", "sha256:" + "G" * 64):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                target.verified_archive(api, {"id": 789, "digest": value})
+
+    def test_archive_digest_mismatch_rejected(self):
+        api = FakeAPI()
+        api.archive = lambda _: b"tampered"
+        with self.assertRaisesRegex(ValueError, "SHA256 mismatch"):
+            target.verified_archive(api, {"id": 789, "digest": "sha256:" + "0" * 64})
 
     def test_api_missing_token_rejected(self):
         with self.assertRaises(ValueError):

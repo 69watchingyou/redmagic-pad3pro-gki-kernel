@@ -150,6 +150,16 @@ def verified_artifact(api, run, name):
     return artifact
 
 
+def verified_archive(api, artifact):
+    digest = artifact.get("digest", "")
+    if not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+        raise ValueError("Missing or malformed artifact SHA256 digest")
+    data = api.archive(artifact["id"])
+    if "sha256:" + hashlib.sha256(data).hexdigest() != digest:
+        raise ValueError("Artifact archive SHA256 mismatch")
+    return data
+
+
 def selected_files(archive, names):
     with zipfile.ZipFile(io.BytesIO(archive)) as source:
         result = {}
@@ -173,8 +183,8 @@ def prepare(api, repository, run_id, directory):
     raw = verified_artifact(api, candidate, f"redmagic-6.6.30-raw-candidate-{run_id}")
     tools = verified_artifact(api, component, COMPONENT_NAME)
     image_path = "work/out/arch/arm64/boot/Image"
-    image = selected_files(api.archive(raw["id"]), [image_path])[image_path]
-    parts = selected_files(api.archive(tools["id"]), list(HASHES))
+    image = selected_files(verified_archive(api, raw), [image_path])[image_path]
+    parts = selected_files(verified_archive(api, tools), list(HASHES))
     for name, digest in HASHES.items():
         if hashlib.sha256(parts[name]).hexdigest() != digest:
             raise ValueError("Component SHA256 mismatch")
