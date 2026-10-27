@@ -6,9 +6,9 @@ User-designated remote: https://github.com/69watchingyou/redmagic-pad3pro-gki-ke
 
 ## Status
 
-No kernel has been compiled or boot tested. No flashable boot image is supplied. The included workflow is a preflight only and intentionally fails while required source/integration pins are unresolved. Do not interpret unit-test success as kernel compatibility.
+No kernel has been compiled or boot tested. No flashable boot image is supplied. The preflight workflow intentionally fails while required integration checks are unresolved. A separate KPM component workflow has successfully compiled its payload and host tools; it does not compile the main kernel. Do not interpret unit-test success as kernel compatibility.
 
-Verified common source: `54dcbfbef792fe56756fa60d5f10395a958ac2f1`, tag `android15-6.6-2024-07_r29`, build `12368803`. Full manifest and toolchain pin remain unresolved. KPM needs a verified implementation/postprocessor, not just CONFIG_KPM=y. No automatic flashing commands are included.
+Verified common source: `54dcbfbef792fe56756fa60d5f10395a958ac2f1`, tag `android15-6.6-2024-07_r29`, build `12368803`. A matched historical superproject snapshot now pins all 34 dependencies; this is not proof of the original CI full manifest. New KPM ABI v2 components have successfully built separately from pinned source with a checksum-verified ARM compiler. A successful component build is not a compiled kernel or a device compatibility result. No automatic flashing commands are included.
 
 ## Local checks
 
@@ -23,6 +23,6 @@ Preflight currently exits 2 by design. Artifact config checks do not establish K
 
 ## Reference scripts
 
-`scripts/` contains unmodified audit reference downloads from ShirkNeko/GKI_KernelSU_SUSFS commit `814c5c22afbaa707c50a7573ec4edc338e80004a`. These scripts are NOT invoked by the workflow and are NOT the build recipe: they ignore several command failures, use moving dependencies, skip 6.6 KPM postprocessing and use generic packaging parameters. Do not run them as a validated device build.
+The previously audited ShirkNeko/GKI_KernelSU_SUSFS scripts are deliberately not shipped here. They ignore several command failures, use moving dependencies, skip 6.6 KPM postprocessing and use generic packaging parameters. The KPM component workflow builds native tools and payload only; its artifacts are NOT boot images.
 
 Original firmware images and private keys must never be committed. Preserve original boot/init_boot/vendor_boot separately. Before migration preserve the currently working patched init_boot as well; no such device partition backup has yet been made.

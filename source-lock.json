@@ -9,19 +9,22 @@
     "build_id": "12368803",
     "kmi_generation": 8,
     "page_size": 4096,
-    "manifest_commit": null
+    "manifest_commit": "e3beef2ebe3aae7684e49ea7e3bf135c7eefcddc",
+    "matched_superproject_commit": "69fa47848cb1f63c3eb1db819a60befa8a644ec6",
+    "manifest_confidence": "matched snapshot; not proof of original CI complete manifest"
   },
   "integration": {
-    "sukisu_commit": null,
-    "susfs_commit": null,
-    "kpm_implementation": null
+    "sukisu_commit": "0b666cad90f3a13cb4085f8c88e5144594e82030",
+    "susfs_commit": "c51cd8aad3f7e2f8c48bc3bda88cc68cf7d82895",
+    "kpm_implementation": "SukiSU_KernelPatch_patch@d958d2582fe3b7eaaeaf238b3bf9af4507a81174",
+    "validated_kernel_patchset": null
   },
   "reference_builder_commit": "814c5c22afbaa707c50a7573ec4edc338e80004a",
   "blocking_checks": [
-    "Pin compatible manifest and toolchain",
-    "Select matched SukiSU and SUSFS commits",
-    "Validate real KPM implementation for 6.6, not config/UI alone",
-    "Authenticate user-owned GitHub repository before dispatch"
+    "Adapt SUSFS and current builtin hook APIs against exact 6.6.30 source",
+    "Compile main kernel and check resulting configuration and release",
+    "Postprocess a copied Image and validate KPM metadata",
+    "Review vendor ABI before any device test; runtime compatibility remains unverified"
   ],
   "flash_allowed": false
 }
