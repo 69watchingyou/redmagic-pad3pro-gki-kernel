@@ -1,0 +1,27 @@
+{
+  "status": "preflight-only-not-build-ready",
+  "device": "NP05J",
+  "kernel": {
+    "repository": "https://android.googlesource.com/kernel/common",
+    "mirror": "https://github.com/aosp-mirror/kernel_common",
+    "commit": "54dcbfbef792fe56756fa60d5f10395a958ac2f1",
+    "tag": "android15-6.6-2024-07_r29",
+    "build_id": "12368803",
+    "kmi_generation": 8,
+    "page_size": 4096,
+    "manifest_commit": null
+  },
+  "integration": {
+    "sukisu_commit": null,
+    "susfs_commit": null,
+    "kpm_implementation": null
+  },
+  "reference_builder_commit": "814c5c22afbaa707c50a7573ec4edc338e80004a",
+  "blocking_checks": [
+    "Pin compatible manifest and toolchain",
+    "Select matched SukiSU and SUSFS commits",
+    "Validate real KPM implementation for 6.6, not config/UI alone",
+    "Authenticate user-owned GitHub repository before dispatch"
+  ],
+  "flash_allowed": false
+}

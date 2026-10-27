@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.img
+*.bin
+*.apk
+*.zip
+*.pem
+*.key
+out/
+bazel-*/
+.repo/
+KernelSU/
+susfs4ksu/
