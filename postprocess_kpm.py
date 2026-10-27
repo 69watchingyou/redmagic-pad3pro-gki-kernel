@@ -92,6 +92,8 @@ def postprocess(image, kpimg, kptools, output):
             parsed = metadata(result.stdout, patched=True)
             if parsed != metadata(payload_info.stdout):
                 raise ValueError("Patched payload metadata differs from supplied kpimg")
+            if before["config_sha256"] != after["config_sha256"]:
+                raise ValueError("Postprocessor changed embedded kernel config")
             if before["version"] != after["version"]:
                 raise ValueError("Postprocessor changed kernel release")
             for path, name in ((image, "input"), (kpimg, "kpimg"), (kptools, "kptools")):

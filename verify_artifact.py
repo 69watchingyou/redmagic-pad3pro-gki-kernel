@@ -12,6 +12,8 @@ def inspect(path):
         raise ValueError("Not an uncompressed ARM64 Linux Image")
     if ((struct.unpack_from("<Q", data, 24)[0] >> 1) & 3) != 1:
         raise ValueError("ARM64 header does not declare 4K pages")
+    if data.count(b"IKCFG_ST") != 1 or data.count(b"IKCFG_ED") != 1:
+        raise ValueError("Missing or ambiguous embedded kernel config")
     start = data.find(b"IKCFG_ST")
     end = data.find(b"IKCFG_ED", start + 8)
     if start < 0 or end < 0:
@@ -29,7 +31,7 @@ def inspect(path):
     version = data[marker:version_end].decode(errors="replace")
     if not re.match(r"^Linux version 6\.6\.30-android15-8(?:-|\s|$)", version):
         raise ValueError("Unexpected kernel release: " + version)
-    return {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "version": version, "config_gate": "passed", "boot_tested": False, "kpm_runtime_tested": False, "vendor_abi_verified": False, "flash_authorized": False}
+    return {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "version": version, "config_sha256": hashlib.sha256(config.encode()).hexdigest(), "config_gate": "passed", "boot_tested": False, "kpm_runtime_tested": False, "vendor_abi_verified": False, "flash_authorized": False}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)

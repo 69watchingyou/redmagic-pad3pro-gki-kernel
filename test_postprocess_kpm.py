@@ -62,6 +62,18 @@ class PostprocessTests(unittest.TestCase):
         self.assertEqual(saved["expected_bridge_abi"], 2)
         self.assertEqual(len(self.calls), 3)
 
+    def test_changed_config_rejected(self):
+        def fake(args, **kwargs):
+            result = self.fake(args, **kwargs)
+            if "-p" in args:
+                destination = Path(args[args.index("-o") + 1])
+                prefix = self.original.split(b"IKCFG_ST", 1)[0]
+                destination.write_bytes(prefix + b"IKCFG_ST" + gzip.compress(("\n".join(REQUIRED) + "\nCONFIG_UNREVIEWED=y").encode()) + b"IKCFG_EDpatched")
+            return result
+        with self.assertRaisesRegex(ValueError, "changed embedded"):
+            self.run_case(fake)
+        self.assert_no_output()
+
     def test_existing_output_not_overwritten(self):
         self.output.write_bytes(b"preserve")
         with self.assertRaises(FileExistsError):
