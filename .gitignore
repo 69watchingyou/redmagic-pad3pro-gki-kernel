@@ -5,6 +5,8 @@ __pycache__/
 *.apk
 *.zip
 *.pem
+# Pinned OEM PUBLIC certificate only; private keys remain ignored.
+!configs/stock-module-signing.pem
 *.key
 out/
 bazel-*/

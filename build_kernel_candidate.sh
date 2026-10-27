@@ -94,7 +94,17 @@ if [[ -e $COMMON_DIR/drivers/kernelsu/Makefile ]]; then
   make_args+=(GIT_BIN=/bin/false CURL_BIN=/bin/false KSU_GITHUB_VER= GITHUB_COMMITS=
     "KSU_VERSION=$KSU_VERSION_PIN" "KSU_VERSION_FULL=$KSU_VERSION_FULL_PIN")
 fi
+# Retain MODULE_SIG_PROTECT while trusting the exact OEM GKI module signer.
+# Public certificate recovered from the untouched stock boot; no private key.
+stock_cert="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/configs/stock-module-signing.pem"
+[[ -f $stock_cert ]] || fail 'stock module public certificate missing'
+cert_sha=$(openssl x509 -in "$stock_cert" -outform DER | sha256sum | cut -d' ' -f1)
+[[ $cert_sha == 46a87b2eeaf96989c0e9a59b5f26e133a1cdf984bac30f874a3266756f2974b3 ]] || fail 'stock signer certificate mismatch'
+"$COMMON_DIR/scripts/config" --file "$OUT_DIR/.config" --set-str SYSTEM_TRUSTED_KEYS "$stock_cert"
+cp "$stock_cert" "$OUT_DIR/evidence/stock-module-signing.pem"
+printf '%s\n' "$cert_sha" > "$OUT_DIR/evidence/stock-module-signing.der.sha256"
 make "${make_args[@]}" olddefconfig
+ grep -Fx "CONFIG_SYSTEM_TRUSTED_KEYS=\"$stock_cert\"" "$OUT_DIR/.config" || fail 'stock signer trust lost'
 if grep -qx 'CONFIG_RUST=y' "$OUT_DIR/.config"; then
   [[ -n ${RUST_DIR:-} ]] || fail 'CONFIG_RUST=y needs pinned RUST_DIR'
   "$RUST_DIR/bin/rustc" --version | tee "$OUT_DIR/evidence/rust-version.txt"

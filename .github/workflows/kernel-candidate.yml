@@ -85,6 +85,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 verify_artifact.py "$OUT_DIR/arch/arm64/boot/Image" | tee logs/image-validation.json
+          openssl x509 -in configs/stock-module-signing.pem -outform DER -out logs/stock-module-signing.der
+          python3 -c 'import pathlib,sys; image=pathlib.Path(sys.argv[1]).read_bytes(); cert=pathlib.Path(sys.argv[2]).read_bytes(); assert cert in image, "OEM public certificate missing from Image"; print("OEM trust certificate present in Image")' "$OUT_DIR/arch/arm64/boot/Image" logs/stock-module-signing.der
           printf '%s\n' 'RAW CANDIDATE ONLY: KernelPatch postprocessing not performed.' 'No vendor ABI comparison or device boot test; not flashable certification.' > logs/STATUS.txt
       - name: Upload diagnostics and candidate if present
         if: always()
