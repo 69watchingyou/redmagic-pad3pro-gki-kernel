@@ -1323,7 +1323,7 @@ index 6276b3938..019a760dc 100644
  	show_fd_locks(m, file, files);
  	if (seq_has_overflowed(m))
 diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index a7d8724fb..9a01a78e9 100644
+index a7d8724fb..17a92a7ae 100644
 --- a/fs/proc/task_mmu.c
 +++ b/fs/proc/task_mmu.c
 @@ -23,6 +23,9 @@
@@ -1424,7 +1424,7 @@ index a7d8724fb..9a01a78e9 100644
 -				smap_gather_stats(vma, &mss, last_vma_end);
 +			if (vma->vm_end > last_vma_end) {
 +#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-+				if (!vma->vm_file || !SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
++				if (!vma->vm_file || !(SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file))))
 +#endif
 +					smap_gather_stats(vma, &mss, last_vma_end);
 +			}
