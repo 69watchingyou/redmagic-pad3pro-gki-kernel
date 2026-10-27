@@ -1,0 +1,41 @@
+name: Experimental NONFLASHABLE raw KPM postprocess
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful kernel-candidate.yml run ID from this repository (digits only)
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  postprocess:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Test fail-closed provenance checks and existing postprocessor
+        run: python3 -m unittest test_prepare_kpm_postprocess test_postprocess_kpm -v
+      - name: Verify runs, source pins and component hashes; stage raw inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RUN_ID: ${{ inputs.run_id }}
+        run: python3 prepare_kpm_postprocess.py --run-id "$CANDIDATE_RUN_ID" --directory kpm-inputs
+      - name: Postprocess copied raw Image only (no boot packaging or flashing)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir kpm-experimental-nonflashable
+          python3 postprocess_kpm.py --image kpm-inputs/Image --kpimg kpm-inputs/kpimg --kptools kpm-inputs/kptools --output kpm-experimental-nonflashable/Image.kp
+          cp kpm-inputs/provenance.json kpm-experimental-nonflashable/
+          printf '%s\n' 'EXPERIMENTAL NONFLASHABLE RAW IMAGE ONLY.' 'No boot packaging. No device test. Vendor compatibility and runtime bridge ABI remain unverified.' 'No flashing is authorized.' > kpm-experimental-nonflashable/STATUS.txt
+      - name: Upload separate experimental NONFLASHABLE raw Image and reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: experimental-NONFLASHABLE-raw-Image-kp-${{ github.run_id }}
+          path: kpm-experimental-nonflashable/
+          if-no-files-found: error
+          retention-days: 7
