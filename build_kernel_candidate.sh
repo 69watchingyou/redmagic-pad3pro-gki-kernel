@@ -113,6 +113,8 @@ make "${make_args[@]}" -s kernelrelease > "$OUT_DIR/evidence/kernelrelease.txt"
 make "${make_args[@]}" INSTALL_HDR_PATH="$OUT_DIR/usr" headers_install
 # Compile adapted integration surfaces first so API errors fail before a full build.
 # These are real Kbuild targets with identical flags, not a substitute for the full link.
+# SukiSU includes generated SELinux headers; build their owner before the driver.
+make "${make_args[@]}" -j"${JOBS:-$(nproc)}" security/selinux/
 make "${make_args[@]}" -j"${JOBS:-$(nproc)}" fs/proc/task_mmu.o fs/susfs.o drivers/kernelsu/
 make "${make_args[@]}" -j"${JOBS:-$(nproc)}" Image modules
 [[ -s $OUT_DIR/arch/arm64/boot/Image && -s $OUT_DIR/Module.symvers && -s $OUT_DIR/vmlinux ]] || fail 'required build outputs missing'
