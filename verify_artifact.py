@@ -1,5 +1,5 @@
 """Read-only gate for a raw arm64 Image; does not prove device compatibility."""
-import argparse, gzip, hashlib, json, struct
+import argparse, gzip, hashlib, json, re, struct
 from pathlib import Path
 
 REQUIRED = ("CONFIG_KSU=y", "CONFIG_KSU_SUSFS=y", "CONFIG_KPM=y", "CONFIG_KALLSYMS=y", "CONFIG_KALLSYMS_ALL=y", "CONFIG_ARM64_4K_PAGES=y", "CONFIG_MODVERSIONS=y")
@@ -23,8 +23,11 @@ def inspect(path):
     marker = data.find(b"Linux version ")
     if marker < 0:
         raise ValueError("Kernel version missing")
-    version = data[marker:data.find(b"\0", marker)].decode(errors="replace")
-    if not version.startswith("Linux version 6.6.30-android15-8"):
+    version_end = data.find(b"\0", marker)
+    if version_end < 0:
+        raise ValueError("Unterminated kernel version")
+    version = data[marker:version_end].decode(errors="replace")
+    if not re.match(r"^Linux version 6\.6\.30-android15-8(?:-|\s|$)", version):
         raise ValueError("Unexpected kernel release: " + version)
     return {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "version": version, "config_gate": "passed", "boot_tested": False, "kpm_runtime_tested": False, "vendor_abi_verified": False, "flash_authorized": False}
 

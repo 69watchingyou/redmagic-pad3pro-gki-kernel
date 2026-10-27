@@ -24,6 +24,9 @@ class VerifyTests(unittest.TestCase):
     def test_wrong_release(self):
         with self.assertRaisesRegex(ValueError, "release"):
             self.check(self.image(version=b"Linux version 6.6.98-android15-8"))
+    def test_wrong_kmi_prefix_collision(self):
+        with self.assertRaisesRegex(ValueError, "release"):
+            self.check(self.image(version=b"Linux version 6.6.30-android15-80-test"))
     def test_boot_rejected(self):
         with self.assertRaisesRegex(ValueError, "raw Image"):
             self.check(b"ANDROID!" + bytes(64))
