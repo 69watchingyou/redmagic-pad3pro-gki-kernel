@@ -33,7 +33,13 @@ cp "$STOCK_CONFIG" "$OUT_DIR/evidence/stock.config"
 git -C "$COMMON_DIR" diff --binary HEAD > "$OUT_DIR/evidence/applied.patch"
 git -C "$COMMON_DIR" status --porcelain=v1 > "$OUT_DIR/evidence/source-status.txt"
 git -C "$COMMON_DIR" ls-files --others --exclude-standard > "$OUT_DIR/evidence/untracked-files.txt"
-# Source status is not a complete patch lock: caller must archive/hash linked SukiSU etc.
+# Record the separately patched dependency: common git diff follows no symlinks.
+if [[ -e $COMMON_DIR/drivers/kernelsu/Makefile ]]; then
+  ksu_source=$(realpath "$COMMON_DIR/drivers/kernelsu")
+  git -C "$ksu_source" rev-parse HEAD > "$OUT_DIR/evidence/sukisu-source.txt"
+  git -C "$ksu_source" diff --binary HEAD > "$OUT_DIR/evidence/sukisu-applied.patch"
+fi
+sha256sum "$COMMON_DIR/fs/susfs.c" "$COMMON_DIR/include/linux/susfs.h" "$COMMON_DIR/include/linux/susfs_def.h" > "$OUT_DIR/evidence/susfs-payload.sha256"
 export PATH="$CLANG_DIR/bin:$PATH"
 if [[ -n ${RUST_DIR:-} ]]; then
   RUST_DIR=$(realpath "$RUST_DIR")
