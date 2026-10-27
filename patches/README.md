@@ -25,6 +25,10 @@ Original upstream patch dry-run failed against this older common in fs/exec.c, f
 - `ksu_handle_sys_read` actually returns int and accepts `(unsigned int fd, char __user **buf_ptr, size_t *count_ptr)`; corrected the declaration and syscall invocation to pass all three arguments.
 - Other init-rc, input, first-zygote static keys do exist under `KSU_COMPAT_USE_STATIC_KEY` (enabled for >=4.3). Exec/preinit/post-exec/reboot/setresuid signatures were inspected in implementations as well as headers.
 
+## Actual compiler follow-ups
+
+Run 40554085205 passed SELinux header generation and reached the builtin driver, then failed on `policy/allowlist.c:456` with Clang `-Werror,-Wimplicit-fallthrough`. The separate `sukisu-clang-fallthrough.patch` replaces the existing intentional fall-through comment with the kernel `fallthrough;` annotation. It preserves version-2 to version-3 profile migration; no break or warning suppression is added. Integration checks and applies this patch to the pinned SukiSU dependency and saves its exact diff next to the common tree. Compilation must still be re-run.
+
 ## Configuration
 
 Required top-level integration options: `CONFIG_KSU=y`, `CONFIG_KSU_SUSFS=y`, `CONFIG_KPM=y`, 4K ARM64 pages, KALLSYMS and KALLSYMS_ALL, IKCONFIG. This pinned Kconfig defaults its SUSFS sub-options to y; KPM defaults n and must be explicitly enabled. Validate the final generated config after olddefconfig. KPM's KernelPatch ABI2 companion and image postprocessing are outside this patch and remain independently required.

@@ -33,6 +33,11 @@ for file in fs/susfs.c include/linux/susfs.h include/linux/susfs_def.h; do
   [[ ! -e "$COMMON_DIR/$file" ]] || { echo "Refusing existing payload: $file" >&2; exit 1; }
 done
 [[ ! -e "$COMMON_DIR/drivers/kernelsu" && ! -L "$COMMON_DIR/drivers/kernelsu" ]] || { echo 'kernelsu already exists' >&2; exit 1; }
+# Preserve intentional profile v2 -> v3 migration with a Clang-recognized annotation.
+git -C "$KSU_DIR" apply --check "$PATCH_DIR/sukisu-clang-fallthrough.patch"
+git -C "$KSU_DIR" apply "$PATCH_DIR/sukisu-clang-fallthrough.patch"
+git -C "$KSU_DIR" diff --check
+git -C "$KSU_DIR" diff --binary HEAD > "$(dirname "$COMMON_DIR")/sukisu-applied.patch"
 git -C "$COMMON_DIR" apply "$PATCH_DIR/susfs-sukisu-6.6.30.patch"
 cp "$SUSFS_DIR/kernel_patches/fs/susfs.c" "$COMMON_DIR/fs/susfs.c"
 cp "$SUSFS_DIR/kernel_patches/include/linux/susfs.h" "$COMMON_DIR/include/linux/susfs.h"

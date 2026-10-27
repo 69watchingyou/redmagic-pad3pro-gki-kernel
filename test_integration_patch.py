@@ -3,6 +3,14 @@ from pathlib import Path
 import unittest
 
 class PatchRegressionTests(unittest.TestCase):
+    def test_explicit_profile_fallthrough(self):
+        root = Path(__file__).with_name("patches")
+        patch = (root / "sukisu-clang-fallthrough.patch").read_text()
+        self.assertIn("-        /* fall through */", patch)
+        self.assertIn("+        fallthrough;", patch)
+        self.assertNotIn("+        break;", patch)
+        self.assertIn("sukisu-clang-fallthrough.patch", (root / "integrate.sh").read_text())
+
     def test_older_vma_flow(self):
         patch = Path(__file__).with_name("patches").joinpath("susfs-sukisu-6.6.30.patch").read_text()
         section = patch.split("diff --git a/fs/proc/task_mmu.c", 1)[1].split("diff --git", 1)[0]
